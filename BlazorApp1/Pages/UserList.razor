@@ -1,0 +1,41 @@
+﻿@page "/userList"
+
+@using System.Net.Http
+@using System.Net.Http.Json
+@using Resources
+@inject HttpClient Http
+
+<PageTitle>User List</PageTitle>
+
+<h1>User List</h1>
+
+@foreach(var user in userList)
+{
+    <div>
+        <div>
+            <img src="@user.Picture" />
+        </div>
+        <div>
+            <span>@user.FirstName @user.LastName</span>
+        </div>
+        <div>
+            <div>Title: @user.Title</div>
+            <div>Id: @user.Id</div>
+        </div>
+    </div>
+
+}
+
+@code {
+    private List<User> userList = new List<User>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://dummyapi.io/data/v1/user");
+        request.Headers.Add("app-id", "618bf0a5ce109fcdd5ef1e64");
+
+        var response = await Http.SendAsync(request);
+        var content = await response.Content.ReadFromJsonAsync<User>();
+
+    }
+}

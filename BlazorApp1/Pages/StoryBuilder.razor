@@ -1,0 +1,33 @@
+﻿@page "/storybuilder"
+
+<PageTitle>Story Builder</PageTitle>
+<div class="w-100">
+    <div class="w-50 d-grid">
+        <p>Enter text to add to story</p>
+        <input id="storyInput" @bind="InputText"></input>
+        <button class="btn-success rounded-3 mt-1" @onclick="UpdateStory">Submit</button>
+    </div>
+    <div class="w-50 d-grid">
+        <div style="border: solid; border-color:auto; min-height:3rem" class="rounded-3 mt-5">
+            @StoryText
+        </div>
+        <button class="btn-danger rounded-3 mt-1" @onclick="DeleteStory">Delete Story</button>
+    </div>
+</div>
+
+@code {
+    private string StoryText { get; set; } = string.Empty;
+
+    private string InputText { get; set; } = string.Empty;
+
+    private void UpdateStory()
+    {
+        StoryText += " " + InputText;
+        InputText = string.Empty;
+    }
+
+    private void DeleteStory()
+    {
+        StoryText = string.Empty;
+    }
+}

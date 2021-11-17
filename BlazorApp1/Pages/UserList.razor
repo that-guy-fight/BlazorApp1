@@ -2,40 +2,91 @@
 
 @using System.Net.Http
 @using System.Net.Http.Json
-@using Resources
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
 @inject HttpClient Http
 
 <PageTitle>User List</PageTitle>
 
 <h1>User List</h1>
-
-@foreach(var user in userList)
-{
-    <div>
-        <div>
-            <img src="@user.Picture" />
-        </div>
-        <div>
-            <span>@user.FirstName @user.LastName</span>
-        </div>
-        <div>
-            <div>Title: @user.Title</div>
-            <div>Id: @user.Id</div>
-        </div>
-    </div>
-
-}
+<div class="w-100" style="display: flex; justify-content: center;">
+    <table class="w-75">
+        <tr class="text-center">
+            <td class="col"></td>
+            <td class="col">Title</td>
+            <td class="col">First Name</td>
+            <td class="col">Last Name</td>
+            <td class="col">User Id</td>
+        </tr>
+        <tr class="text-center" style="border-bottom-width: 2px">
+            <td class="col"></td>
+            <td class="col"><input id="titleFilter" @bind ="TitleFilter" size="10" @oninput="@FilterSearch" /></td>
+            <td class="col"><input id="firstNameFilter" @bind="FirstNameFilter" size="10" @oninput="@FilterSearch" /></td>
+            <td class="col"><input id="lastNameFilter" @bind="LastNameFilter" size="10" @oninput="@FilterSearch" /></td>
+            <td class="col"><input id="idFilter" @bind="IdFilter" @oninput="@FilterSearch" /></td>
+        </tr>
+        @foreach (var user in userList)
+        {
+            <tr style="@GetBackgroundColor(userList.IndexOf(user)); text-align: center">
+                <td class="col">
+                    <img src="@user.Picture" />
+                </td>
+                <td class="col">
+                    @user.Title
+                </td>
+                <td class="col">
+                    @user.FirstName
+                </td>
+                <td>
+                    @user.LastName
+                </td>
+                <td>@user.Id</td>
+            </tr>
+        }
+    </table>
+</div>
 
 @code {
     private List<User> userList = new List<User>();
+    private List<User> masterList = new List<User>();
+    private string TitleFilter = string.Empty;
+    private string FirstNameFilter = string.Empty;
+    private string LastNameFilter = string.Empty;
+    private string IdFilter = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://dummyapi.io/data/v1/user");
-        request.Headers.Add("app-id", "618bf0a5ce109fcdd5ef1e64");
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("app-id", "618bf0a5ce109fcdd5ef1e64");
+        var result = await client.GetAsync("https://dummyapi.io/data/v1/user");
+        var content = await result.Content.ReadAsStringAsync();
 
-        var response = await Http.SendAsync(request);
-        var content = await response.Content.ReadFromJsonAsync<User>();
+        if (content != null)
+        {
+            JObject json = (JObject)JsonConvert.DeserializeObject(content);
+            var data = json["data"].ToString();
+            userList = JsonConvert.DeserializeObject<List<User>>(data);
+            masterList = JsonConvert.DeserializeObject<List<User>>(data);
+        }
+    }
 
+    private void FilterSearch(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            var search = e.Value.ToString().ToLower();
+
+            userList = masterList.Where(u =>
+               u.Title.Contains(TitleFilter)
+               && u.FirstName.Contains(FirstNameFilter)
+               && u.LastName.Contains(LastNameFilter)
+               && u.Id.Contains(IdFilter)
+            ).ToList();
+        }
+    }
+
+    private string GetBackgroundColor(int n)
+    {
+        return n % 2 != 0 ? "background-color: #dee2e6" : "background-color: #fffaeb";
     }
 }

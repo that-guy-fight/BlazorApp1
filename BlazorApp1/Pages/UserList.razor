@@ -13,17 +13,17 @@
     <table class="w-75">
         <tr class="text-center">
             <td class="col"></td>
-            <td class="col">Title</td>
-            <td class="col">First Name</td>
-            <td class="col">Last Name</td>
-            <td class="col">User Id</td>
+            <td class="col" style="cursor: pointer" @onclick="SortColumn">Title</td>
+            <td class="col" style="cursor: pointer">First Name</td>
+            <td class="col" style="cursor: pointer">Last Name</td>
+            <td class="col" style="cursor: pointer">User Id</td>
         </tr>
         <tr class="text-center" style="border-bottom-width: 2px">
-            <td class="col"></td>
-            <td class="col"><input id="titleFilter" @bind ="TitleFilter" size="10" @oninput="@FilterSearch" /></td>
-            <td class="col"><input id="firstNameFilter" @bind="FirstNameFilter" size="10" @oninput="@FilterSearch" /></td>
-            <td class="col"><input id="lastNameFilter" @bind="LastNameFilter" size="10" @oninput="@FilterSearch" /></td>
-            <td class="col"><input id="idFilter" @bind="IdFilter" @oninput="@FilterSearch" /></td>
+            <td class="col"><button class="alert-danger rounded-3" @onclick="ClearSearch">Clear Search</button></td>
+            <td class="col"><input id="titleFilter" size="10" @bind-value=TitleFilter @bind-value:event="oninput" @onchange="FilterSearch" /></td>
+            <td class="col"><input id="firstNameFilter" size="10" @bind-value=FirstNameFilter @bind-value:event="oninput" @onchange="FilterSearch" /></td>
+            <td class="col"><input id="lastNameFilter" size="10" @bind-value=LastNameFilter @bind-value:event="oninput" @onchange="FilterSearch" /></td>
+            <td class="col"><input id="idFilter" @bind-value=IdFilter @bind-value:event="oninput" @onchange="FilterSearch" /></td>
         </tr>
         @foreach (var user in userList)
         {
@@ -70,19 +70,29 @@
         }
     }
 
-    private void FilterSearch(ChangeEventArgs e)
+    private void FilterSearch()
     {
-        if (e.Value != null)
-        {
-            var search = e.Value.ToString().ToLower();
+        userList = masterList.Where(u =>
+           u.Title.ToLower().ToLower().Contains(TitleFilter.ToLower())
+           && u.FirstName.ToLower().Contains(FirstNameFilter.ToLower())
+           && u.LastName.ToLower().Contains(LastNameFilter.ToLower())
+           && u.Id.ToLower().Contains(IdFilter.ToLower())
+        ).ToList();
+    }
 
-            userList = masterList.Where(u =>
-               u.Title.Contains(TitleFilter)
-               && u.FirstName.Contains(FirstNameFilter)
-               && u.LastName.Contains(LastNameFilter)
-               && u.Id.Contains(IdFilter)
-            ).ToList();
-        }
+    private void ClearSearch()
+    {
+        TitleFilter = string.Empty;
+        FirstNameFilter = string.Empty;
+        LastNameFilter = string.Empty;
+        IdFilter = string.Empty;
+
+        FilterSearch();
+    }
+
+    private void SortColumn(EventArgs e)
+    {
+        Console.WriteLine("You clicked sort!");
     }
 
     private string GetBackgroundColor(int n)

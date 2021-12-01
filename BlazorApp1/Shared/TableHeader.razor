@@ -1,0 +1,80 @@
+﻿@using LinqKit
+
+<tr class="text-center">
+    <td class="col"></td>
+    @foreach (var filter in SearchFilters)
+    {
+        <td class="col" style="cursor: pointer">@filter.Key</td>
+    }
+</tr>
+<tr class="text-center" style="border-bottom-width: 2px">
+    <td class="col"><button class="alert-danger rounded-3" @onclick="ClearSearch">Clear Search</button></td>
+    @foreach (KeyValuePair<string, string> filter in SearchFilters)
+    {
+        <td class="col"><input size="10" value="@filter.Value" @onchange="(e => UpdateFilter(e, filter))" /></td>
+
+    }
+</tr>
+
+@code {
+    [CascadingParameter]
+    protected List<UserPreview> UserList { get; set; }
+    [Parameter]
+    public Action<ExpressionStarter<UserPreview>> UpdateFilters { get; set; }
+
+    private Dictionary<string, string> SearchFilters = new Dictionary<string, string>();
+    private string TitleFilter = string.Empty;
+    private string FirstNameFilter = string.Empty;
+    private string LastNameFilter = string.Empty;
+    private string IdFilter = string.Empty;
+    private bool InitialLoad = false;
+
+    protected override void OnParametersSet()
+    {
+        if (UserList.FirstOrDefault() != null)
+        {
+            if (!InitialLoad)
+            {
+                InitialLoad = true;
+                foreach (var prop in UserList.First().GetType().GetProperties())
+                {
+                    SearchFilters.Add(prop.Name, string.Empty);
+                }
+                var thing = SearchFilters;
+            }
+        }
+    }
+
+    private void UpdateFilter(ChangeEventArgs e, KeyValuePair<string, string> filter)
+    {
+        if (e != null && e.Value != null)
+        {
+            SearchFilters[filter.Key] = e.Value.ToString();
+            FilterSearch();
+        }
+    }
+
+    private void FilterSearch()
+    {
+        if (UserList.FirstOrDefault() != null)
+        {
+            var predicate = PredicateBuilder.New<UserPreview>(true);
+            foreach (var prop in UserList.First().GetType().GetProperties())
+            {
+                predicate = predicate.And(user => user.GetType().GetProperty(prop.Name).GetValue(user).ToString().ToLower().Contains(SearchFilters[prop.Name].ToLower()));
+            }
+
+            UpdateFilters?.Invoke(predicate);
+        }
+    }
+
+    private void ClearSearch()
+    {
+        foreach (var filter in SearchFilters)
+        {
+            SearchFilters[filter.Key] = string.Empty;
+        }
+
+        FilterSearch();
+    }
+}

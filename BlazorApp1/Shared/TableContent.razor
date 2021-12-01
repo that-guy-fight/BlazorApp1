@@ -1,0 +1,28 @@
+﻿@foreach (var user in UserList)
+{
+    <tr style="@GetBackgroundColor(UserList.IndexOf(user)); text-align: center">
+        <td class="col">
+            <img src="@user.Picture" />
+        </td>
+        <td class="col">
+            @user.Title
+        </td>
+        <td class="col">
+            @user.FirstName
+        </td>
+        <td>
+            @user.LastName
+        </td>
+        <td>@user.Id</td>
+    </tr>
+}
+@code {
+
+    [CascadingParameter]
+    protected List<UserPreview> UserList { get; set; }
+
+    private string GetBackgroundColor(int n)
+    {
+        return n % 2 != 0 ? "background-color: #dee2e6" : "background-color: #fffaeb";
+    }
+}

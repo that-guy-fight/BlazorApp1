@@ -14,8 +14,8 @@
 }
 @code {
 
-    [CascadingParameter]
-    protected List<UserPreview> UserList { get; set; }
+    [Parameter]
+    public List<UserPreview> UserList { get; set; }
 
     private void BuildTableData(RenderTreeBuilder __builder, UserPreview user, int displayNumber)
     {

@@ -18,14 +18,16 @@
 </tr>
 
 @code {
-    [CascadingParameter]
-    protected List<UserPreview> UserList { get; set; }
-    [CascadingParameter]
-    protected KeyValuePair<string, SearchFilter> CurrentFilter { get; set; }
     [Parameter]
-    public Action<ExpressionStarter<UserPreview>> UpdateFilters { get; set; }
+    public List<UserPreview> UserList { get; set; }
+    [Parameter]
+    public EventCallback<List<UserPreview>> UserListChanged { get; set; }
+    [Parameter]
+    public List<UserPreview> MasterList { get; set; }
 
+    private List<UserPreview> TempList = new List<UserPreview>();
     private Dictionary<string, SearchFilter> SearchFilters = new Dictionary<string, SearchFilter>();
+    private KeyValuePair<string, SearchFilter> CurrentFilter = new KeyValuePair<string, SearchFilter>(string.Empty, new SearchFilter(string.Empty, false));
     private string TitleFilter = string.Empty;
     private string FirstNameFilter = string.Empty;
     private string LastNameFilter = string.Empty;
@@ -64,6 +66,49 @@
 
     private void FilterSearch()
     {
+        var predicate = BuildSearchExpression();
+
+        if (!String.IsNullOrEmpty(CurrentFilter.Key))
+        {
+            TempList = MasterList.Where(predicate).ToList();
+            var prop = typeof(UserPreview).GetProperty(CurrentFilter.Key);
+            if (CurrentFilter.Value.SortDescending)
+            {
+                UserListChanged.InvokeAsync(TempList.OrderByDescending(user => prop.GetValue(user)).ToList());
+            }
+            else
+            {
+                UserListChanged.InvokeAsync(TempList.OrderBy(user => prop.GetValue(user)).ToList());
+            }
+        }
+        else
+        {
+            UserListChanged.InvokeAsync(MasterList.Where(predicate).ToList());
+        }
+
+    }
+
+    private void ClearSearch()
+    {
+        foreach (var filter in SearchFilters)
+        {
+            SearchFilters[filter.Key].SearchText = string.Empty;
+            SearchFilters[filter.Key].SortDescending = false;
+        }
+
+        CurrentFilter = new KeyValuePair<string, SearchFilter>(string.Empty, new SearchFilter(string.Empty, false));
+        FilterSearch();
+    }
+
+    private void UpdateSort(KeyValuePair<string, SearchFilter> filter)
+    {
+        filter.Value.SortDescending = !filter.Value.SortDescending;
+        CurrentFilter = filter;
+        FilterSearch();
+    }
+
+    private ExpressionStarter<UserPreview> BuildSearchExpression()
+    {
         var predicate = PredicateBuilder.New<UserPreview>(true);
         if (UserList.FirstOrDefault() != null)
         {
@@ -75,25 +120,8 @@
                         user.GetType().GetProperty(prop.Name).GetValue(user).ToString().ToLower().Contains(SearchFilters[prop.Name].SearchText.ToLower()));
                 }
             }
-
-        }
-        UpdateFilters?.Invoke(predicate);
-    }
-
-    private void ClearSearch()
-    {
-        foreach (var filter in SearchFilters)
-        {
-            SearchFilters[filter.Key].SearchText = string.Empty;
-            SearchFilters[filter.Key].SortDescending = false;
         }
 
-        FilterSearch();
-    }
-
-    private void UpdateSort(KeyValuePair<string, SearchFilter> filter)
-    {
-        CurrentFilter = filter;
-        FilterSearch();
+        return predicate;
     }
 }

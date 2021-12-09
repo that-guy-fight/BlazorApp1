@@ -12,12 +12,9 @@
 <h1>User List</h1>
 <div class="w-100" style="display: flex; justify-content: center;">
     <div class="w-75">
-        <CascadingValue Value="Users">
-            <CascadingValue Value="CurrentFilter">
-                <TableHeader @ref="TableHeader" />
-                <TableContent />
-            </CascadingValue>
-        </CascadingValue>
+        @*<TableHeader @ref="TableHeader" />*@
+        <TableHeader @bind-UserList="Users" MasterList="MasterList"/>
+        <TableContent UserList="Users" />
     </div>
 </div>
 
@@ -44,30 +41,5 @@
             Users = JsonConvert.DeserializeObject<List<UserPreview>>(data);
             MasterList = JsonConvert.DeserializeObject<List<UserPreview>>(data);
         }
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        TableHeader.UpdateFilters += ChildUpdatedFilters;
-    }
-
-    private void ChildUpdatedFilters(ExpressionStarter<UserPreview> filterPredicate)
-    {
-        Users = MasterList.Where(filterPredicate).ToList();
-
-        if(!String.IsNullOrEmpty(CurrentFilter.Key) )
-        {
-            var prop = typeof(UserPreview).GetProperty(CurrentFilter.Key);
-            if(CurrentFilter.Value.SortDescending)
-            {
-                Users.OrderByDescending(user => prop.GetValue(user));
-            }
-            else
-            {
-                Users.OrderBy(user => prop.GetValue(user));
-            }
-        }
-
-        StateHasChanged();
     }
 }

@@ -1,25 +1,38 @@
-﻿@foreach (var user in UserList)
+﻿@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Rendering
+
+@foreach (var user in UserList)
 {
     <tr style="@GetBackgroundColor(UserList.IndexOf(user)); text-align: center">
-        <td class="col">
-            <img src="@user.Picture" />
-        </td>
-        <td class="col">
-            @user.Title
-        </td>
-        <td class="col">
-            @user.FirstName
-        </td>
-        <td>
-            @user.LastName
-        </td>
-        <td>@user.Id</td>
+        @for (int displayNumber = 0; displayNumber < user.GetType().GetProperties().Length; displayNumber++)
+        {
+            <td>
+                @{ BuildTableData(__builder, user, displayNumber); }
+            </td>
+        }
     </tr>
 }
 @code {
 
     [CascadingParameter]
     protected List<UserPreview> UserList { get; set; }
+
+    private void BuildTableData(RenderTreeBuilder __builder, UserPreview user, int displayNumber)
+    {
+        var data = user.GetType().GetProperties().Where(prop => ((DisplayAttribute?)Attribute.GetCustomAttribute(prop, typeof(DisplayAttribute))).Order == displayNumber).FirstOrDefault();
+        if (data != null)
+        {
+            var value = data.GetValue(user);
+            if (data.Name.ToLower().Equals("picture"))
+            {
+                <td><img src=@value></td>
+            }
+            else
+            {
+                <td>@value</td>
+            }
+        }
+    }
 
     private string GetBackgroundColor(int n)
     {

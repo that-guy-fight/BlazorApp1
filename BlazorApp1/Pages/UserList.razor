@@ -13,8 +13,10 @@
 <div class="w-100" style="display: flex; justify-content: center;">
     <div class="w-75">
         <CascadingValue Value="Users">
-            <TableHeader @ref="TableHeader" />
-            <TableContent />
+            <CascadingValue Value="CurrentFilter">
+                <TableHeader @ref="TableHeader" />
+                <TableContent />
+            </CascadingValue>
         </CascadingValue>
     </div>
 </div>
@@ -24,9 +26,12 @@
 
     private List<UserPreview> Users = new List<UserPreview>();
     private List<UserPreview> MasterList = new List<UserPreview>();
+    protected KeyValuePair<string, SearchFilter> CurrentFilter;
 
     protected override async Task OnInitializedAsync()
     {
+        CurrentFilter = new KeyValuePair<string, SearchFilter>(string.Empty, new SearchFilter(string.Empty, false));
+
         var client = new HttpClient();
         client.DefaultRequestHeaders.Add("app-id", "618bf0a5ce109fcdd5ef1e64");
         var result = await client.GetAsync("https://dummyapi.io/data/v1/user");
@@ -46,10 +51,23 @@
         TableHeader.UpdateFilters += ChildUpdatedFilters;
     }
 
-    private void ChildUpdatedFilters(ExpressionStarter<UserPreview> filters)
+    private void ChildUpdatedFilters(ExpressionStarter<UserPreview> filterPredicate)
     {
-        Users = MasterList.Where(filters).ToList();
+        Users = MasterList.Where(filterPredicate).ToList();
+
+        if(!String.IsNullOrEmpty(CurrentFilter.Key) )
+        {
+            var prop = typeof(UserPreview).GetProperty(CurrentFilter.Key);
+            if(CurrentFilter.Value.SortDescending)
+            {
+                Users.OrderByDescending(user => prop.GetValue(user));
+            }
+            else
+            {
+                Users.OrderBy(user => prop.GetValue(user));
+            }
+        }
+
         StateHasChanged();
     }
-
 }

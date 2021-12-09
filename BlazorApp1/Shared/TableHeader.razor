@@ -1,28 +1,31 @@
 ﻿@using LinqKit
+@using System.ComponentModel.DataAnnotations
+@using System.Linq.Expressions
 
 <tr class="text-center">
     <td class="col"></td>
     @foreach (var filter in SearchFilters)
     {
-        <td class="col" style="cursor: pointer">@filter.Key</td>
+        <td class="col" style="cursor: pointer" @onclick="() => UpdateSort(filter)">@filter.Key</td>
     }
 </tr>
 <tr class="text-center" style="border-bottom-width: 2px">
     <td class="col"><button class="alert-danger rounded-3" @onclick="ClearSearch">Clear Search</button></td>
-    @foreach (KeyValuePair<string, string> filter in SearchFilters)
+    @foreach (KeyValuePair<string, SearchFilter> filter in SearchFilters)
     {
-        <td class="col"><input size="10" value="@filter.Value" @onchange="(e => UpdateFilter(e, filter))" /></td>
-
+        <td class="col"><input size="10" value="@filter.Value.SearchText" @onchange="(e => UpdateFilter(e, filter))" /></td>
     }
 </tr>
 
 @code {
     [CascadingParameter]
     protected List<UserPreview> UserList { get; set; }
+    [CascadingParameter]
+    protected KeyValuePair<string, SearchFilter> CurrentFilter { get; set; }
     [Parameter]
     public Action<ExpressionStarter<UserPreview>> UpdateFilters { get; set; }
 
-    private Dictionary<string, string> SearchFilters = new Dictionary<string, string>();
+    private Dictionary<string, SearchFilter> SearchFilters = new Dictionary<string, SearchFilter>();
     private string TitleFilter = string.Empty;
     private string FirstNameFilter = string.Empty;
     private string LastNameFilter = string.Empty;
@@ -35,46 +38,62 @@
         {
             if (!InitialLoad)
             {
+                var userType = UserList.First().GetType();
                 InitialLoad = true;
-                foreach (var prop in UserList.First().GetType().GetProperties())
+                for (int displayNumber = 0; displayNumber < userType.GetProperties().Length; displayNumber++)
                 {
-                    SearchFilters.Add(prop.Name, string.Empty);
+                    var prop = userType.GetProperties().Where(prop =>
+                        ((DisplayAttribute?)Attribute.GetCustomAttribute(prop, typeof(DisplayAttribute))).Order == displayNumber).FirstOrDefault();
+                    if (prop != null && !prop.Name.ToLower().Equals("picture"))
+                    {
+                        SearchFilters.Add(prop.Name, new SearchFilter(string.Empty, false));
+                    }
                 }
-                var thing = SearchFilters;
             }
         }
     }
 
-    private void UpdateFilter(ChangeEventArgs e, KeyValuePair<string, string> filter)
+    private void UpdateFilter(ChangeEventArgs e, KeyValuePair<string, SearchFilter> filter)
     {
         if (e != null && e.Value != null)
         {
-            SearchFilters[filter.Key] = e.Value.ToString();
+            SearchFilters[filter.Key].SearchText = e.Value.ToString();
             FilterSearch();
         }
     }
 
     private void FilterSearch()
     {
+        var predicate = PredicateBuilder.New<UserPreview>(true);
         if (UserList.FirstOrDefault() != null)
         {
-            var predicate = PredicateBuilder.New<UserPreview>(true);
             foreach (var prop in UserList.First().GetType().GetProperties())
             {
-                predicate = predicate.And(user => user.GetType().GetProperty(prop.Name).GetValue(user).ToString().ToLower().Contains(SearchFilters[prop.Name].ToLower()));
+                if (!prop.Name.ToLower().Equals("picture"))
+                {
+                    predicate = predicate.And(user =>
+                        user.GetType().GetProperty(prop.Name).GetValue(user).ToString().ToLower().Contains(SearchFilters[prop.Name].SearchText.ToLower()));
+                }
             }
 
-            UpdateFilters?.Invoke(predicate);
         }
+        UpdateFilters?.Invoke(predicate);
     }
 
     private void ClearSearch()
     {
         foreach (var filter in SearchFilters)
         {
-            SearchFilters[filter.Key] = string.Empty;
+            SearchFilters[filter.Key].SearchText = string.Empty;
+            SearchFilters[filter.Key].SortDescending = false;
         }
 
+        FilterSearch();
+    }
+
+    private void UpdateSort(KeyValuePair<string, SearchFilter> filter)
+    {
+        CurrentFilter = filter;
         FilterSearch();
     }
 }

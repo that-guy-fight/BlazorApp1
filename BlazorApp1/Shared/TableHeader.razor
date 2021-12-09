@@ -10,10 +10,18 @@
     }
 </tr>
 <tr class="text-center" style="border-bottom-width: 2px">
-    <td class="col"><button class="alert-danger rounded-3" @onclick="ClearSearch">Clear Search</button></td>
+    <td class="col d-grid">
+        <button class="alert-danger rounded-3" @onclick="ClearSearch">Clear Search</button>
+        <button class="alert-success rounded-3">Show Cols</button>
+    </td>
     @foreach (KeyValuePair<string, SearchFilter> filter in SearchFilters)
     {
-        <td class="col"><input size="10" value="@filter.Value.SearchText" @onchange="(e => UpdateFilter(e, filter))" /></td>
+        <td class="col">
+            <span class="d-grid">
+                <input size="10" value="@filter.Value.SearchText" @onchange="(e => UpdateFilter(e, filter))" />
+                <button class="alert-warning rounded-3" style="width: fit-content; margin: auto" @onclick="() => HideColumn(filter)">Hide</button>
+            </span>
+        </td>
     }
 </tr>
 
@@ -105,6 +113,11 @@
         filter.Value.SortDescending = !filter.Value.SortDescending;
         CurrentFilter = filter;
         FilterSearch();
+    }
+
+    private void HideColumn(KeyValuePair<string, SearchFilter> filter)
+    {
+        
     }
 
     private ExpressionStarter<UserPreview> BuildSearchExpression()

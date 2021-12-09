@@ -11,5 +11,7 @@
         public string SearchText { get; set; }
 
         public bool SortDescending { get; set; }
+
+        public bool IsHidden { get; set; }
     }
 }
